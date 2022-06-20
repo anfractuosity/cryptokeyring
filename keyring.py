@@ -11,9 +11,10 @@ def test(image, outputprefix, drillA=True):
     arr = np.array(img) > 0
     arr = np.swapaxes(arr, 0, 1)
 
-    hole = 0.5 # Radius of hole
+    hole = 0.3 # Radius of hole
     gap = 0.5  # Gap between holes
-    border = 3
+    yborder = 4
+    xborder = 2
 
     rheight = (arr.shape[0] * 2 * ((hole*2)+gap))
     rwidth = (arr.shape[1] * 2 * ((hole*2)+gap))
@@ -36,9 +37,11 @@ def test(image, outputprefix, drillA=True):
     B[0][1] = True
     B[1][0] = True
 
-    print(f"{rheight + border},{rwidth + border}")
+    kheight = rheight + yborder + (xborder/2)
+    kwidth = rwidth + xborder
+    print(f"{kheight},{kwidth}")
     cube = doc.addObject("Part::Feature", "myCube")
-    cube.Shape = Part.makeBox(rheight + border, rwidth + border, thick)
+    cube.Shape = Part.makeBox(kheight, kwidth, thick)
 
     chmfr = doc.addObject("Part::Fillet", "myChamfer")
     chmfr.Base = doc.myCube
@@ -74,11 +77,10 @@ def test(image, outputprefix, drillA=True):
                 drillb = drill
 
             if (drillA and drilla) or ((not drillA) and drillb):
-                y_ = hole + ((y/height) * rheight) + (border/2)
-                x_ = hole + ((x/width) * rwidth) + (border/2)
+                y_ = hole + ((y/height) * rheight) + yborder
+                x_ = (((x+0.5)/width) * rwidth) + (xborder/2)
                 SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0,0,1), hole), False)
-
-    #SocketSketch.addGeometry(Part.Circle(App.Vector(8, rwidth / 2, 0), App.Vector(0,0,1), 1.5),False)
+    SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0,0,1), 1.3),False)
     pocket = doc.addObject("PartDesign::Pocket","Pocket0")
     pocket.Profile = SocketSketch
     pocket.Length = 10

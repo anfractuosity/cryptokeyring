@@ -84,8 +84,6 @@ def test(image, outputprefix, drillA=True):
     pocket.Length = 10
 
     Gui.activeDocument().hide("SketchHole0")
-    doc.recompute()
-
     Gui.activeDocument().hide("myPartName")
     Gui.activeDocument().hide("myChamfer")
     doc.recompute()

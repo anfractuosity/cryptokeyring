@@ -1,7 +1,7 @@
-
 import numpy as np
 import Part
 import ProfileLib.RegularPolygon
+import importDXF
 from FreeCAD import Base
 from PIL import Image
 
@@ -92,6 +92,7 @@ def test(image, outputprefix, drillA=True):
 
     state = "A" if drillA else "B"
     doc.saveAs(f"{outputprefix}-{state}.FCStd")
+    importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
 
 test("imgs/test.png", "key", drillA=True)
 test("imgs/test.png", "key", drillA=False)

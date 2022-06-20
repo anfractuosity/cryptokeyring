@@ -18,19 +18,19 @@ def test(image, outputprefix, drillA=True):
     h1 = y1 - y0
     w1 = x1 - x0
 
-    hole = 0.2
+    hole = 0.17
     scale = 2.0
 
-    height = int((y1 - y0)*scale) + 1
-    width = int((x1 - x0)*scale) + 1
+    height = int((y1 - y0)*scale)
+    width = int((x1 - x0)*scale)
 
     img = Image.open(image)
     img = img.convert('L')
     arr = np.array(img) > 0
     arr = np.swapaxes(arr, 0, 1)
 
-    iwidth = ((width-1) // 2) + 1
-    iheight = ((height-1) // 2) + 1
+    iwidth = (width // 2) + 1
+    iheight = (height // 2) + 1
     print(f"Please use image of size - {iwidth}x{iheight}")
 
     np.random.seed(1)
@@ -67,8 +67,8 @@ def test(image, outputprefix, drillA=True):
     SocketSketch.MapMode = 'FlatFace'
     doc.recompute()
 
-    for y in range(0, height):
-        for x in range(0, width):
+    for y in range(0, height+1):
+        for x in range(0, width+1):
             color = arr[y//2][x//2]
             choice = arr2[y//2][x//2]
             x_ = x % 2
@@ -87,8 +87,8 @@ def test(image, outputprefix, drillA=True):
                 drillb = drill
 
             if (drillA and drilla) or ((not drillA) and drillb):
-                y_ = y0 + ((y/(height-1))*h1)
-                x_ = x0 + ((x/(width-1))*w1)
+                y_ = y0 + ((y/height)*h1)
+                x_ = x0 + ((x/width)*w1)
                 SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0,0,1), hole), False)
 
     SocketSketch.addGeometry(Part.Circle(App.Vector(4, rwidth / 2, 0), App.Vector(0,0,1), 1.5),False)

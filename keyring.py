@@ -33,19 +33,17 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     gap = 0.5  # Gap between holes
     yborder = 4
     xborder = 2
-
-    rheight = (arr.shape[0] * 2 * ((hole*2)+gap))
-    rwidth = (arr.shape[1] * 2 * ((hole*2)+gap))
+    h = arr.shape[0]
+    w = arr.shape[1]
+    rheight = (h * 2 * ((hole*2)+gap))
+    rwidth = (w * 2 * ((hole*2)+gap))
     thick = 1
-
-    height = arr.shape[0] * 2
-    width = arr.shape[1] * 2
 
     if keyfile is None:
         np.random.seed(1)
-        arr2 = np.random.randint(2, size=(height, width)) > 0
+        arr2 = np.random.randint(2, size=(h, w)) > 0
     else:
-        arr2 = np.reshape(readbits(keyfile, arr.shape[0] * arr.shape[1]), (arr.shape[0], arr.shape[1])) > 0
+        arr2 = np.reshape(readbits(keyfile, h * w), (h, w)) > 0
 
     doc = FreeCAD.newDocument()
     myPart = doc.addObject("Part::Feature","myPartName")
@@ -53,13 +51,13 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     A = np.full((2, 2), False, dtype=bool)
     A[0][0] = True
     A[1][1] = True
-
     B = np.full((2, 2), False, dtype=bool)
     B[0][1] = True
     B[1][0] = True
-
+    col = {False: [(B, A), (A, B)], True: [(A, A), (B, B)]}
     kheight = rheight + yborder + (xborder/2)
     kwidth = rwidth + xborder
+
     print(f"{kheight},{kwidth}")
     cube = doc.addObject("Part::Feature", "myCube")
     cube.Shape = Part.makeBox(kheight, kwidth, thick)
@@ -79,28 +77,21 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     SocketSketch.MapMode = 'FlatFace'
     doc.recompute()
 
-    for y in range(0, height):
-        for x in range(0, width):
-            color = arr[y//2][x//2]
-            choice = arr2[y//2][x//2]
-            x_ = x % 2
-            y_ = y % 2
-            if choice:
-                drill = A[y_][x_]
-            else:
-                drill = B[y_][x_]
+    for y in range(0, h):
+        for x in range(0, w):
+            color = arr[y][x]
+            choice = arr2[y][x]
+            bitidx = 0 if choice else 1
+            drillidx = 0 if drillA else 1
+            val = col[color][bitidx][drillidx]
+            for y_1 in range(2):
+                for x_1 in range(2):
+                    y_ = ((((y*2) + y_1 + 0.5) / (h*2)) * rheight) + yborder
+                    x_ = ((((x*2) + x_1 + 0.5) / (w*2)) * rwidth) + (xborder/2)
+                    drillit = val[y_1][x_1]
+                    if drillit:
+                        SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0,0,1), hole), False)
 
-            if not color:
-                drilla = drill
-                drillb = not drill
-            else:
-                drilla = drill
-                drillb = drill
-
-            if (drillA and drilla) or ((not drillA) and drillb):
-                y_ = hole + ((y/height) * rheight) + yborder
-                x_ = (((x+0.5)/width) * rwidth) + (xborder/2)
-                SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0,0,1), hole), False)
     SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0,0,1), 1.3),False)
     pocket = doc.addObject("PartDesign::Pocket","Pocket0")
     pocket.Profile = SocketSketch

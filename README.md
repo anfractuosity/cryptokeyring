@@ -9,6 +9,13 @@ To run:
 freecad keyring.py image_path output_prefix
 ```
 
+or
+
+```
+freecad keyring.py image_path output_prefix key_path
+```
+
+
 # A
 
 ![A](imgs/a.png)

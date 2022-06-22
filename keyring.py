@@ -1,9 +1,13 @@
+import argparse
+import sys
+
+import importDXF
 import numpy as np
 import Part
 import ProfileLib.RegularPolygon
-import importDXF
 from FreeCAD import Base
 from PIL import Image
+
 
 def test(image, outputprefix, drillA=True):
     img = Image.open(image)
@@ -94,5 +98,11 @@ def test(image, outputprefix, drillA=True):
     doc.saveAs(f"{outputprefix}-{state}.FCStd")
     importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
 
-test("imgs/test.png", "key", drillA=True)
-test("imgs/test.png", "key", drillA=False)
+if len(sys.argv) == 4:
+    image = sys.argv[2]
+    output = sys.argv[3]
+    print(f"""Using image "{image}" and output prefix "{output}".""")
+    test(image, output, drillA=True)
+    test(image, output, drillA=False)
+else:
+    print("Please use: freecad keyring.py image_path output_prefix")

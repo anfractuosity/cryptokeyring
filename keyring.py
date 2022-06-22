@@ -25,25 +25,24 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     img = Image.open(image)
     img = img.convert('L')
     img = ImageOps.flip(img)
-
-    arr = np.array(img) > 0
-    arr = np.swapaxes(arr, 0, 1)
+    img = np.array(img) > 0
+    img = np.swapaxes(img, 0, 1)
 
     hole = 0.3 # Radius of hole
     gap = 0.5  # Gap between holes
     yborder = 4
     xborder = 2
-    h = arr.shape[0]
-    w = arr.shape[1]
-    rheight = (h * 2 * ((hole*2)+gap))
-    rwidth = (w * 2 * ((hole*2)+gap))
+    h = img.shape[0]
+    w = img.shape[1]
+    rheight = h * 2 * ((hole*2)+gap)
+    rwidth = w * 2 * ((hole*2)+gap)
     thick = 1
 
     if keyfile is None:
         np.random.seed(1)
-        arr2 = np.random.randint(2, size=(h, w)) > 0
+        randbits = np.random.randint(2, size=(h, w)) > 0
     else:
-        arr2 = np.reshape(readbits(keyfile, h * w), (h, w)) > 0
+        randbits = np.reshape(readbits(keyfile, h * w), (h, w)) > 0
 
     doc = FreeCAD.newDocument()
     myPart = doc.addObject("Part::Feature","myPartName")
@@ -79,8 +78,8 @@ def test(image, outputprefix, keyfile=None, drillA=True):
 
     for y in range(0, h):
         for x in range(0, w):
-            color = arr[y][x]
-            choice = arr2[y][x]
+            color = img[y][x]
+            choice = randbits[y][x]
             bitidx = 0 if choice else 1
             drillidx = 0 if drillA else 1
             val = col[color][bitidx][drillidx]
@@ -90,9 +89,9 @@ def test(image, outputprefix, keyfile=None, drillA=True):
                     x_ = ((((x*2) + x_1 + 0.5) / (w*2)) * rwidth) + (xborder/2)
                     drillit = val[y_1][x_1]
                     if drillit:
-                        SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0,0,1), hole), False)
+                        SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0, 0, 1), hole), False)
 
-    SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0,0,1), 1.3),False)
+    SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0, 0, 1), 1.3),False)
     pocket = doc.addObject("PartDesign::Pocket","Pocket0")
     pocket.Profile = SocketSketch
     pocket.Length = 10

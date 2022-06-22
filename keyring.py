@@ -1,15 +1,27 @@
 import argparse
+import math
 import sys
 
 import importDXF
 import numpy as np
 import Part
-import ProfileLib.RegularPolygon
 from FreeCAD import Base
 from PIL import Image, ImageOps
 
 
-def test(image, outputprefix, drillA=True):
+def readbits(file, count):
+    with open(file, "rb") as f:
+        bits = []
+        data = f.read(math.ceil(count / 8))
+        for b in data:
+            for i in range(8):
+                bits += [b & 1]
+                b >>= 1
+                if len(bits) == count:
+                    break
+        return bits
+
+def test(image, outputprefix, keyfile=None, drillA=True):
     img = Image.open(image)
     img = img.convert('L')
     img = ImageOps.flip(img)
@@ -29,8 +41,11 @@ def test(image, outputprefix, drillA=True):
     height = arr.shape[0] * 2
     width = arr.shape[1] * 2
 
-    np.random.seed(1)
-    arr2 = np.random.randint(2, size=(height, width)) > 0
+    if keyfile is None:
+        np.random.seed(1)
+        arr2 = np.random.randint(2, size=(height, width)) > 0
+    else:
+        arr2 = np.reshape(readbits(keyfile, arr.shape[0] * arr.shape[1]), (arr.shape[0], arr.shape[1])) > 0
 
     doc = FreeCAD.newDocument()
     myPart = doc.addObject("Part::Feature","myPartName")
@@ -102,11 +117,15 @@ def test(image, outputprefix, drillA=True):
     Gui.activeDocument().activeView().setCameraOrientation(App.Rotation(90, 0, 0))
     Gui.activeDocument().activeView().fitAll()
 
-if len(sys.argv) == 4:
+if len(sys.argv) == 4 or len(sys.argv) == 5:
     image = sys.argv[2]
     output = sys.argv[3]
+    keyfile = None
+    if len(sys.argv) == 5:
+        keyfile = sys.argv[4]
     print(f"""Using image "{image}" and output prefix "{output}".""")
-    test(image, output, drillA=True)
-    test(image, output, drillA=False)
+    test(image, output, keyfile=keyfile, drillA=True)
+    test(image, output, keyfile=keyfile, drillA=False)
 else:
     print("Please use: freecad keyring.py image_path output_prefix")
+    print("Or        : freecad keyring.py image_path output_prefix key_file")

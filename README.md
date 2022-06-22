@@ -8,3 +8,15 @@ To run:
 ```
 freecad keyring.py image_path output_prefix
 ```
+
+# A
+
+![A](imgs/a.png)
+
+# B
+
+![B](imgs/b.png)
+
+# Result
+
+![Result](imgs/c.png)

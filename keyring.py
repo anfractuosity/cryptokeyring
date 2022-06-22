@@ -6,12 +6,14 @@ import numpy as np
 import Part
 import ProfileLib.RegularPolygon
 from FreeCAD import Base
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def test(image, outputprefix, drillA=True):
     img = Image.open(image)
     img = img.convert('L')
+    img = ImageOps.flip(img)
+
     arr = np.array(img) > 0
     arr = np.swapaxes(arr, 0, 1)
 
@@ -97,6 +99,8 @@ def test(image, outputprefix, drillA=True):
     state = "A" if drillA else "B"
     doc.saveAs(f"{outputprefix}-{state}.FCStd")
     importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
+    Gui.activeDocument().activeView().setCameraOrientation(App.Rotation(90, 0, 0))
+    Gui.activeDocument().activeView().fitAll()
 
 if len(sys.argv) == 4:
     image = sys.argv[2]

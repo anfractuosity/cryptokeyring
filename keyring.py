@@ -1,11 +1,13 @@
-import argparse
 import math
+import random
 import sys
 
 import importDXF
 import numpy as np
+import FreeCAD
+import FreeCAD as App
+import FreeCADGui as Gui
 import Part
-from FreeCAD import Base
 from PIL import Image, ImageOps
 
 
@@ -21,6 +23,7 @@ def readbits(file, count):
                     break
         return bits
 
+
 def test(image, outputprefix, keyfile=None, drillA=True):
     img = Image.open(image)
     img = img.convert('L')
@@ -28,8 +31,8 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     img = np.array(img) > 0
     img = np.swapaxes(img, 0, 1)
 
-    hole = 0.3 # Radius of hole
-    gap = 0.5  # Gap between holes
+    hole = 0.3  # Radius of hole
+    gap = 0.5   # Gap between holes
     yborder = 4
     xborder = 2
     h = img.shape[0]
@@ -39,22 +42,14 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     thick = 1
 
     if keyfile is None:
-        np.random.seed(1)
-        randbits = np.random.randint(2, size=(h, w)) > 0
+        random.seed(1)
     else:
-        randbits = np.reshape(readbits(keyfile, h * w), (h, w)) > 0
+        randbits = np.reshape(readbits(keyfile, h * w), (h, w))
 
     doc = FreeCAD.newDocument()
-    myPart = doc.addObject("Part::Feature","myPartName")
-
-    A = np.full((2, 2), False, dtype=bool)
-    A[0][0] = True
-    A[1][1] = True
-    B = np.full((2, 2), False, dtype=bool)
-    B[0][1] = True
-    B[1][0] = True
-    col = {False: [(B, A), (A, B)], True: [(A, A), (B, B)]}
-    kheight = rheight + yborder + (xborder/2)
+    # patterns = [(0, 0, 1, 1), (1, 1, 0, 0), (1, 0, 1, 0), (0, 1, 0, 1), (1, 0, 0, 1), (0, 1, 1, 0)]
+    patterns = [(1, 0, 0, 1), (0, 1, 1, 0)]
+    kheight = rheight + yborder + (xborder / 2)
     kwidth = rwidth + xborder
 
     print(f"{kheight},{kwidth}")
@@ -65,13 +60,13 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     chmfr.Base = doc.myCube
     myEdges = []
     for i in range(1, 12+1):
-        myEdges.append((i, 0.35, 0.325)) # (edge number, chamfer start length, chamfer end length)
+        myEdges.append((i, 0.35, 0.325))  # (edge number, chamfer start length, chamfer end length)
 
     chmfr.Edges = myEdges
     doc.myCube.Visibility = False
     doc.recompute()
 
-    SocketSketch = doc.addObject('Sketcher::SketchObject','SketchHole0')
+    SocketSketch = doc.addObject('Sketcher::SketchObject', 'SketchHole0')
     SocketSketch.Support = (chmfr, ["Face14"])
     SocketSketch.MapMode = 'FlatFace'
     doc.recompute()
@@ -79,10 +74,12 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     for y in range(0, h):
         for x in range(0, w):
             color = img[y][x]
-            choice = randbits[y][x]
-            bitidx = 0 if choice else 1
-            drillidx = 0 if drillA else 1
-            val = col[color][bitidx][drillidx]
+            if keyfile is None:
+                val = np.reshape(random.choice(patterns), (2, 2)) > 0
+            else:
+                val = np.reshape(patterns[randbits[y][x]], (2, 2)) > 0
+            if not drillA and not color:
+                val = np.invert(val)
             for y_1 in range(2):
                 for x_1 in range(2):
                     y_ = ((((y*2) + y_1 + 0.5) / (h*2)) * rheight) + yborder
@@ -91,13 +88,12 @@ def test(image, outputprefix, keyfile=None, drillA=True):
                     if drillit:
                         SocketSketch.addGeometry(Part.Circle(App.Vector(y_, x_, 0), App.Vector(0, 0, 1), hole), False)
 
-    SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0, 0, 1), 1.3),False)
-    pocket = doc.addObject("PartDesign::Pocket","Pocket0")
+    SocketSketch.addGeometry(Part.Circle(App.Vector(yborder / 2, kwidth / 2, 0), App.Vector(0, 0, 1), 1.3), False)
+    pocket = doc.addObject("PartDesign::Pocket", "Pocket0")
     pocket.Profile = SocketSketch
     pocket.Length = 10
 
     Gui.activeDocument().hide("SketchHole0")
-    Gui.activeDocument().hide("myPartName")
     Gui.activeDocument().hide("myChamfer")
     doc.recompute()
 
@@ -106,6 +102,7 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
     Gui.activeDocument().activeView().setCameraOrientation(App.Rotation(90, 0, 0))
     Gui.activeDocument().activeView().fitAll()
+
 
 if len(sys.argv) == 4 or len(sys.argv) == 5:
     image = sys.argv[2]

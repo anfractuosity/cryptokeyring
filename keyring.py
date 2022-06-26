@@ -100,6 +100,7 @@ def test(image, outputprefix, keyfile=None, drillA=True):
     state = "A" if drillA else "B"
     doc.saveAs(f"{outputprefix}-{state}.FCStd")
     importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
+    pocket.Shape.exportStl(f"{outputprefix}-{state}.stl")
     Gui.activeDocument().activeView().setCameraOrientation(App.Rotation(90, 0, 0))
     Gui.activeDocument().activeView().fitAll()
 

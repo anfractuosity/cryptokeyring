@@ -99,7 +99,19 @@ def test(image, outputprefix, keyfile=None, drillA=True):
 
     state = "A" if drillA else "B"
     doc.saveAs(f"{outputprefix}-{state}.FCStd")
-    importDXF.export([pocket], f"{outputprefix}-{state}.dxf")
+
+    # Following is used to simplify outline of keyring
+    # so where to laser cut edge is more clear
+    wires=list()
+    shape = pocket.Shape
+    for i in shape.slice(App.Vector(0,0,1),0.5):
+        wires.append(i)
+    comp=Part.Compound(wires)
+    sliceit=doc.addObject("Part::Feature","Pocket0_cs")
+    sliceit.Shape=comp
+    sliceit.purgeTouched()
+
+    importDXF.export([sliceit], f"{outputprefix}-{state}.dxf")
     pocket.Shape.exportStl(f"{outputprefix}-{state}.stl")
     Gui.activeDocument().activeView().setCameraOrientation(App.Rotation(90, 0, 0))
     Gui.activeDocument().activeView().fitAll()
